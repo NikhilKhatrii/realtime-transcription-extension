@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transcription Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #1a202c;
+      /* Deep charcoal background */
+      --card-bg-color: #2d3748;
+      /* Lighter slate for cards */
+      --primary-text-color: #e2e8f0;
+      /* Light grey for primary text */
+      --secondary-text-color: #a0aec0;
+      /* Softer grey for secondary text */
+      --accent-color: #4299e1;
+      /* A brighter blue for contrast */
+      --accent-color-hover: #63b3ed;
+      --border-color: #4a5568;
+      /* Subtle border color */
+      --focus-ring-color: rgba(66, 153, 225, 0.5);
+      --info-bg-color: #2c5282;
+      /* Dark blue for info box */
+      --info-border-color: #4c72a3;
+      --info-text-color: #bee3f8;
+      --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+      --border-radius: 8px;
+    }
+
+    body {
+      font-family: var(--font-primary);
+      background-color: var(--bg-color);
+      color: var(--primary-text-color);
+      margin: 0;
+      padding: 40px 20px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      display: grid;
+      gap: 24px;
+    }
+
+    h1,
+    h3,
+    h4 {
+      margin: 0;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-size: 28px;
+      text-align: center;
+      color: #f7fafc;
+      /* Brighter for the main title */
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background-color: var(--card-bg-color);
+      padding: 24px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+    }
+
+    .section-header {
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-header h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #f7fafc;
+    }
+
+    .control-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    label {
+      font-weight: 500;
+      color: var(--secondary-text-color);
+      font-size: 14px;
+    }
+
+    select,
+    input[type="number"] {
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: var(--font-primary);
+      background-color: #1a202c;
+      /* Match main background */
+      color: var(--primary-text-color);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      flex-grow: 1;
+    }
+
+    select option {
+      background-color: var(--card-bg-color);
+    }
+
+    select:focus,
+    input:focus {
+      outline: none;
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px var(--focus-ring-color);
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      background-color: var(--accent-color);
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--accent-color-hover);
+    }
+
+    button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent-color);
+    }
+
+    /* Make checkboxes visible in dark mode on some browsers */
+    input[type="checkbox"] {
+      background-color: var(--bg-color);
+      border: 2px solid var(--border-color);
+      border-radius: 4px;
+    }
+
+    .appearance-settings {
+      margin-top: 20px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+    }
+
+    .setting-row {
+      display: grid;
+      grid-template-columns: 150px 1fr 50px;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 12px;
+    }
+
+    .setting-row label {
+      color: var(--primary-text-color);
+    }
+
+    .setting-row input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-color);
+    }
+
+    .setting-row span {
+      font-family: var(--font-mono);
+      color: var(--secondary-text-color);
+      font-size: 13px;
+    }
+
+    #transcriptionText {
+      height: 300px;
+      overflow-y: auto;
+      background-color: var(--bg-color);
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--primary-text-color);
+    }
+
+    #transcriptionText div {
+      margin-bottom: 8px;
+    }
+
+    .info-box {
+      background-color: var(--info-bg-color);
+      border: 1px solid var(--info-border-color);
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--info-text-color);
+    }
+
+    .info-box strong {
+      font-weight: 600;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Real-time Transcriber</h1>
+    </header>
+
+    <div class="card">
+      <div class="control-group">
+        <label for="audioSource">Audio Source:</label>
+        <select id="audioSource">
+          <option value="tab">Tab Audio</option>
+          <option value="microphone">Microphone</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header">
+        <h3>Caption Overlay Settings</h3>
+      </div>
+      <div class="checkbox-group">
+        <input type="checkbox" id="overlayToggle">
+        <label for="overlayToggle">Show captions on shared tab</label>
+      </div>
+      <div style="margin-top: 16px;">
+        <button id="selectTabButton">Select Tab for Overlay</button>
+      </div>
+
+      <div class="appearance-settings">
+        <h4>Appearance</h4>
+        <div class="setting-row">
+          <label for="fontSize">Font Size:</label>
+          <input type="range" id="fontSize" min="12" max="48" value="20">
+          <span id="fontSizeValue">20px</span>
+        </div>
+        <div class="setting-row">
+          <label for="textColor">Text Color:</label>
+          <input type="color" id="textColor" value="#FFFFFF">
+        </div>
+        <div class="setting-row">
+          <label for="bgOpacity">BG Opacity:</label>
+          <input type="range" id="bgOpacity" min="0" max="1" step="0.1" value="0.8">
+          <span id="bgOpacityValue">80%</span>
+        </div>
+        <div class="setting-row">
+          <label for="maxLines">Max Lines:</label>
+          <input type="number" id="maxLines" min="1" max="10" value="3" style="width: 70px;">
+        </div>
+      </div>
+      <div class="info-box">
+        <strong>Tip:</strong> If captions don't appear, use the "Select Tab for Overlay" button to manually choose the
+        correct tab.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="control-group">
+        <button id="startButton">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+          </svg>
+          Start Transcription
+        </button>
+        <button id="stopButton" style="background-color: #c53030; --accent-color-hover: #9b2c2c;">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
+          </svg>
+          Stop Transcription
+        </button>
+      </div>
+    </div>
+
+    <div class="card" id="transcriptionOutput">
+      <div class="section-header">
+        <h3>Live Transcription</h3>
+      </div>
+      <div id="transcriptionText">Your live transcription will appear here...</div>
+    </div>
+
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+
+</html>
