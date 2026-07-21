@@ -1,0 +1,11 @@
+# Existing dependencies
+faster-whisper
+websockets
+numpy
+scipy
+
+# New dependencies for Gemini analysis
+aiohttp
+aiohttp-cors
+google-genai
+python-dotenv

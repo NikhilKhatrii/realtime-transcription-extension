@@ -32,6 +32,14 @@
       --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
       --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
       --border-radius: 8px;
+      /* Gemini accent colors */
+      --gemini-gradient-start: #8B5CF6;
+      --gemini-gradient-end: #EC4899;
+      --gemini-bg: #1e1b4b;
+      --gemini-border: #5b21b6;
+      --success-color: #48bb78;
+      --warning-color: #ed8936;
+      --danger-color: #fc8181;
     }
 
     body {
@@ -136,11 +144,16 @@
       color: white;
       background-color: var(--accent-color);
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: background-color 0.2s, opacity 0.2s, transform 0.1s;
     }
 
     button:hover {
       background-color: var(--accent-color-hover);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     button svg {
@@ -227,6 +240,142 @@
       font-weight: 600;
       color: #fff;
     }
+
+    /* --- GEMINI ANALYSIS STYLES --- */
+
+    .gemini-card {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(236, 72, 153, 0.08));
+      border: 1px solid var(--gemini-border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gemini-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gemini-gradient-start), var(--gemini-gradient-end));
+    }
+
+    .gemini-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    }
+
+    .gemini-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .gemini-header h3 {
+      font-size: 18px;
+      font-weight: 600;
+      background: linear-gradient(90deg, var(--gemini-gradient-start), var(--gemini-gradient-end));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .gemini-sparkle {
+      font-size: 20px;
+    }
+
+    .transcript-counter {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      background-color: rgba(139, 92, 246, 0.15);
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    #analyzeButton {
+      background: linear-gradient(135deg, var(--gemini-gradient-start), var(--gemini-gradient-end));
+      padding: 12px 24px;
+      font-size: 15px;
+      border-radius: 8px;
+      width: 100%;
+      justify-content: center;
+      transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+    }
+
+    #analyzeButton:hover:not(:disabled) {
+      opacity: 0.9;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5);
+      transform: translateY(-1px);
+    }
+
+    #analyzeButton:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.7s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Analysis results area */
+    #analysisResult {
+      display: none;
+      margin-top: 16px;
+      padding: 20px;
+      background-color: rgba(30, 27, 75, 0.5);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--primary-text-color);
+      white-space: pre-wrap;
+      max-height: 500px;
+      overflow-y: auto;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    #analysisResult.visible {
+      display: block;
+    }
+
+    #analysisResult.error {
+      border-color: rgba(252, 129, 129, 0.4);
+      background-color: rgba(75, 27, 27, 0.5);
+      color: var(--danger-color);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Markdown-like rendering inside analysis result */
+    #analysisResult strong, #analysisResult b {
+      color: #f7fafc;
+    }
+
+    #analysisResult h1, #analysisResult h2, #analysisResult h3 {
+      color: #f7fafc;
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 
@@ -311,6 +460,30 @@
         <h3>Live Transcription</h3>
       </div>
       <div id="transcriptionText">Your live transcription will appear here...</div>
+    </div>
+
+    <!-- GEMINI ANALYSIS SECTION -->
+    <div class="card gemini-card" id="geminiSection">
+      <div class="gemini-header">
+        <div class="gemini-header-left">
+          <span class="gemini-sparkle">✨</span>
+          <h3>AI Interview Analysis</h3>
+        </div>
+        <span class="transcript-counter" id="transcriptCounter">0 words captured</span>
+      </div>
+
+      <p style="margin: 0 0 16px 0; font-size: 13px; color: var(--secondary-text-color);">
+        When the interview is over, click the button below to send the full transcript to Gemini for a hiring recommendation.
+      </p>
+
+      <button id="analyzeButton" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:18px;height:18px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+        </svg>
+        Analyze Interview with Gemini
+      </button>
+
+      <div id="analysisResult"></div>
     </div>
 
   </div>

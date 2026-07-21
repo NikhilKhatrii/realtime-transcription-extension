@@ -14,6 +14,11 @@ const bgOpacityInput = document.getElementById('bgOpacity');
 const bgOpacityValue = document.getElementById('bgOpacityValue');
 const maxLinesInput = document.getElementById('maxLines');
 
+// --- GEMINI ANALYSIS UI ELEMENTS ---
+const analyzeButton = document.getElementById('analyzeButton');
+const analysisResult = document.getElementById('analysisResult');
+const transcriptCounter = document.getElementById('transcriptCounter');
+
 
 // --- STATE VARIABLES ---
 let websocket;
@@ -22,6 +27,9 @@ let audioStream;
 let workletNode;
 let currentTabId = null;
 let overlayEnabled = false;
+
+// Full session transcript — accumulates ALL text for Gemini analysis
+let fullSessionTranscript = "";
 
 // --- CAPTION SETTINGS STATE ---
 let captionSettings = {
@@ -54,6 +62,17 @@ async function sendMessageToTab(tabId, message) {
 
 async function startTranscription() {
   stopTranscription();
+
+  // Reset the session transcript for a new session
+  fullSessionTranscript = "";
+  updateTranscriptCounter();
+  
+  // Clear previous analysis results
+  analysisResult.classList.remove('visible', 'error');
+  analysisResult.textContent = '';
+
+  // Clear the live transcription display
+  transcriptionText.innerHTML = 'Your live transcription will appear here...';
 
   try {
     const audioSource = audioSourceSelect.value;
@@ -100,6 +119,11 @@ async function startTranscription() {
     websocket.onmessage = (event) => {
       transcriptionText.innerHTML += `<div>${event.data}</div>`;
       transcriptionText.scrollTop = transcriptionText.scrollHeight;
+      
+      // Accumulate the full transcript for Gemini analysis
+      fullSessionTranscript += event.data + " ";
+      updateTranscriptCounter();
+      
       if (overlayEnabled && currentTabId && audioSourceSelect.value === 'tab') {
         sendCaptionToTab(event.data);
       }
@@ -126,6 +150,7 @@ function stopTranscription() {
   if (websocket) websocket.close();
   if (currentTabId && overlayEnabled) removeOverlay();
   // We don't reset currentTabId here so the user can restart without re-selecting a tab
+  // We also don't reset fullSessionTranscript — it persists so the user can analyze it
 }
 
 
@@ -168,10 +193,91 @@ function updateOverlayStyle() {
   }
 }
 
+
+// --- GEMINI ANALYSIS FUNCTIONS ---
+
+function updateTranscriptCounter() {
+  const wordCount = fullSessionTranscript.trim() ? fullSessionTranscript.trim().split(/\s+/).length : 0;
+  transcriptCounter.textContent = `${wordCount} word${wordCount !== 1 ? 's' : ''} captured`;
+  
+  // Enable/disable the analyze button based on whether we have transcript text
+  analyzeButton.disabled = wordCount === 0;
+}
+
+async function analyzeWithGemini() {
+  if (!fullSessionTranscript.trim()) {
+    analysisResult.textContent = "No transcript to analyze. Start a transcription session first.";
+    analysisResult.classList.add('visible', 'error');
+    return;
+  }
+
+  // Set loading state
+  analyzeButton.disabled = true;
+  analyzeButton.innerHTML = '<span class="spinner"></span> Analyzing with Gemini...';
+  analysisResult.classList.remove('visible', 'error');
+  analysisResult.textContent = '';
+
+  try {
+    const response = await fetch('http://localhost:8080/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript: fullSessionTranscript.trim() }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || `Server returned ${response.status}`);
+    }
+
+    // Render the analysis result with basic markdown-to-HTML conversion
+    analysisResult.innerHTML = renderMarkdown(data.analysis);
+    analysisResult.classList.add('visible');
+    analysisResult.classList.remove('error');
+
+  } catch (error) {
+    console.error("Gemini analysis failed:", error);
+    analysisResult.textContent = `Analysis failed: ${error.message}. Make sure the Python server is running and your Gemini API key is set in the .env file.`;
+    analysisResult.classList.add('visible', 'error');
+  } finally {
+    // Restore button state
+    analyzeButton.disabled = false;
+    analyzeButton.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:18px;height:18px;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+      </svg>
+      Analyze Interview with Gemini
+    `;
+    updateTranscriptCounter();
+  }
+}
+
+/**
+ * Simple markdown-to-HTML renderer for Gemini's response.
+ * Handles bold, headers, and list items for a clean display.
+ */
+function renderMarkdown(text) {
+  if (!text) return '';
+  
+  return text
+    // Headers
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // Bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // List items
+    .replace(/^[-*] (.+)$/gm, '• $1')
+    // Line breaks
+    .replace(/\n/g, '<br>');
+}
+
+
 // --- EVENT LISTENERS ---
 
 startButton.addEventListener('click', startTranscription);
 stopButton.addEventListener('click', stopTranscription);
+analyzeButton.addEventListener('click', analyzeWithGemini);
 
 overlayToggle.addEventListener('change', (e) => {
   overlayEnabled = e.target.checked;
